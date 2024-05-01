@@ -7,42 +7,50 @@ correctamente. Tenga en cuenta datos faltantes y duplicados.
 
 """
 import pandas as pd
-
+import re
 
 def clean_data():
 
-    # Leer el archivo CSV
-    df = pd.read_csv("solicitudes_credito.csv", sep=";")
+    df = pd.read_csv("solicitudes_credito.csv", sep=";", index_col=0) 
+    df = df.copy()
+    df = df.rename(columns={0: 'ID'}) 
 
-    # Eliminar filas duplicadas completamente
-    df = df.drop_duplicates()
+    #Columna "sexo" y "tipo_de_emprendimiento"
+    df["sexo"] = df["sexo"].str.lower()
+    df["tipo_de_emprendimiento"] = df["tipo_de_emprendimiento"].str.lower()
+    
+    #Columna "idea_negocio" len=75
+    df["idea_negocio"] = df["idea_negocio"].str.lower()
+    df["idea_negocio"] = df["idea_negocio"].str.replace("-", " ")
+    df["idea_negocio"] = df["idea_negocio"].str.replace("_", " ")
 
-    # Limpiar la columna 'sexo'
-    df['sexo'] = df['sexo'].str.strip().str.lower()
+    #Columna "barrio" len=225 
+    df["barrio"] = df["barrio"].str.lower()
+    df["barrio"] = df["barrio"].str.replace("_", " ")
+    df["barrio"] = df["barrio"].str.replace("-", " ")
+    #df[df["barrio"].str.contains("julio", case=False, na=False)]["barrio"].value_counts()
 
-    # Limpiar la columna 'tipo_de_emprendimiento'
-    df['tipo_de_emprendimiento'] = df['tipo_de_emprendimiento'].str.strip().str.lower()
+    #Columna "fecha_de_beneficio" len=795 ?????????????????
+    def cambiar_orden(lista):
+        if len(lista[0]) == 4:
+            lista[0], lista[2] = lista[2], lista[0]
+        return lista
 
-    # Limpiar la columna 'idea_negocio'
-    df['idea_negocio'] = df['idea_negocio'].str.strip().str.lower()
+    df["fecha_de_beneficio"] = df["fecha_de_beneficio"].str.split("/")
+    df["fecha_de_beneficio"] = df["fecha_de_beneficio"].apply(cambiar_orden)
+    df["fecha_de_beneficio"] = df["fecha_de_beneficio"].apply(lambda x: "/".join(x))
 
-    # Limpiar la columna 'barrio'
-    df['barrio'] = df['barrio'].str.strip().str.lower()
+    #Columna "monto_del_credito" len=277
+    df["monto_del_credito"] = df["monto_del_credito"].str.strip("$")
+    df["monto_del_credito"] = df["monto_del_credito"].str.replace(",", "")
+    df["monto_del_credito"] = df["monto_del_credito"].str.replace(".00", "")
+    df["monto_del_credito"] = df["monto_del_credito"].str.replace(" ", "")
 
-    # Limpiar la columna 'estrato'
-    df['estrato'] = df['estrato'].str.strip().str.lower()
+    #Columna "línea_credito" len=9
+    df["línea_credito"] = df["línea_credito"].str.lower()
+    df["línea_credito"] = df["línea_credito"].str.replace("-", " ")
+    df["línea_credito"] = df["línea_credito"].str.replace("_", " ")
 
-    # Limpiar la columna 'comuna_ciudadano'
-    df['comuna_ciudadano'] = df['comuna_ciudadano'].str.strip().str.lower()
-
-    # Limpiar la columna 'fecha_de_beneficio'
-    df['fecha_de_beneficio'] = pd.to_datetime(df['fecha_de_beneficio'])
-
-    # Limpiar la columna 'monto_del_credito'
-    df['monto_del_credito'] = df['monto_del_credito'].str.replace('$', '').str.replace('.', '').astype(float)
-
-    # Limpiar la columna 'línea_credito'
-    df['línea_credito'] = df['línea_credito'].str.strip().str.lower()
-
-    return df
-
+    df.dropna(inplace=True) #Elimino los nulos
+    df.drop_duplicates(inplace=True) #Elimino los duplicados
+    return df 
